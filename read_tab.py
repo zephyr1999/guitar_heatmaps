@@ -5,100 +5,68 @@
 import numpy
 import plotly.plotly as py
 from plotly.graph_objs import *
-
+import re
 
 filename = "lz_01.txt"
-
-# first, get a list of each line
-with open(filename) as f:
-    tab = f.readlines()
+regex = "[0-9]+"
+infret = 0
 
 #string data will hold all of the string fret info
-string_data = [[],[],[],[],[],[]]
 #string 0 is high E, 1 is B, 2 is G, 3 is D, 4 is A, and 5 is low E
+string_data = [[],[],[],[],[],[]]
 
-# go through each line and check if it begins with a string character,
-# which is usually |
+# first, get a list of each line
+j = 0
+with open(filename, "r") as f:
+    for line in f:
 
-i = 0
+      # TODO: Trim whitespace from front of line, 
+      #       line[0] will fail in some cases unless we do this.
+      #       example:          v------- start of tab
+      #    start of page  ->    |----
 
-while i < len(tab):
+      # TODO: Trim end of fretboard, maybe someone added text?
+      #       example:
+      #         |---------2----4-----4h5---|  text with numbers 1 21
+      #                                These will get picked up ^ ^^
 
-	if tab[i][0] == "|":
-		# this means this is the high E string
-		# so go through 6 lines of strings before checking again
-		for j in range(0,6):
-			# use i+j to go through all 6 strings
-			k = 0
-			while (k < len(tab[i+j])):
-				# check if each character is a number
-				if tab[i+j][k].isdigit():
-					#first check if next number is also digit (i.e. 2 followed by 4)
-					# 	should be stored as '24' and not '2','4'
-					if tab[i+j][k+1].isdigit():
-						#increment the correct string count
-						
-						# TODO: for some reason this is just skipping the second digit
-						# ''.join connects the two characters
-						# print (tab[i+j][k] + tab[i+j][k+1])
-						string_data[j].append(int(''.join(tab[i+j][k] + tab[i+j][k+1])))
-						# increment k to skip over next char
-						k = k + 1
-					else:
-						string_data[j].append(int(tab[i+j][k]))
-						
-				# increment k to next char		
-				k = k + 1
-						
-		#increment i to skip over next 5 lines					
-		i = i + 5
-	
-	#now do the same but with -
-	elif tab[i][0] == "-":
-		# this means this is the high E string
-		# so go through 6 lines of strings before checking again
-		for j in range(0,6):
-			# use i+j to go through all 6 strings
-			k = 0
-			while (k < len(tab[i+j])):
-				# check if each character is a number
-				if tab[i+j][k].isdigit():
-					#first check if next number is also digit (i.e. 2 followed by 4)
-					# 	should be stored as '24' and not '2','4'
-					if tab[i+j][k+1].isdigit():
-						#increment the correct string count
-						
-						# TODO: for some reason this is just skipping the second digit
-						# ''.join connects the two characters
-						# print (tab[i+j][k] + tab[i+j][k+1])
-						string_data[j].append(int(''.join(tab[i+j][k] + tab[i+j][k+1])))
-						# increment k to skip over next char
-						k = k + 1
-					else:
-						string_data[j].append(int(tab[i+j][k]))
-						
-				# increment k to next char		
-				k = k + 1
-						
-		#increment i to skip over next 5 lines					
-		i = i + 5
-		
-	#increment i to next line
-	i = i + 1
-	
+      # check for the begining of a fretboard
+      if line[0] == "|" and infret == 0:
+        # set infret flag to true
+        infret = 1
+      # else if check for the internal of a fretboard
+      elif (line[0] == "|" or line[0] == "-") and infret == 1:
+        # increment string_data indexing
+        j = j + 1
+      # else outside fretboard
+      else:       
+        infret = 0
+        j = 0
+        continue
+
+      # find all fret positions in the current string (line)
+      frets = re.findall(regex, line)
+
+      # check for empty string
+      if (len(frets) == 0):
+        continue
+
+      # iterate the frets and append to string_data
+      for fret in frets:
+        string_data[j].append(int(fret))
+    
 # now string data is a list of fret info, indexed by string number
 # I need to create a 6x24 matrix of counts
-
 counts = numpy.zeros(shape = (6,25))
 
 for i in range(len(string_data)):
-	for j in range(len(string_data[i])):
-		# stupidity check because some tab uses numbers > 24
-		if string_data[i][j] > 24:
-			counts[i][24] = counts[i][24] + 1
-		else:
-			counts[i][string_data[i][j]] = counts[i][string_data[i][j]] + 1
-			
+  for j in range(len(string_data[i])):
+    # stupidity check because some tab uses numbers > 24
+    if string_data[i][j] > 24:
+      counts[i][24] = counts[i][24] + 1
+    else:
+      counts[i][string_data[i][j]] = counts[i][string_data[i][j]] + 1
+      
 #ploting like this will result in the heatmap being flipped, i.e. high E string on bottom
 # and low E string on top
 
@@ -123,20 +91,20 @@ print sum(a)
 b=[]
 for i in string_data: b.append(len(i))
 print sum(b)
-			
+      
 data = Data([
-	Heatmap(
-		z=flipped_counts,
-		x=['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16',
-			'17','18','19','20','21','22','23','24'],
-		y=['E','A','D','G','B','e']
-		)
-	])
+  Heatmap(
+    z=flipped_counts,
+    x=['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16',
+      '17','18','19','20','21','22','23','24'],
+    y=['E','A','D','G','B','e']
+    )
+  ])
 py.plot(data, filename="Led_Zeppelin_Heartbreaker")
 
-						
-					
-				
-				
+            
+          
+        
+        
 
-	
+  
