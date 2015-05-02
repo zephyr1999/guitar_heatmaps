@@ -2,15 +2,23 @@
 # note that with this program, i'm just getting individual note information,
 # note note order or phrasing or any of that nonsense.
 
+# Usage:  python read_tab.py [tab_file.txt] [graph_name]
+
+import sys
+import re
 import numpy
 import plotly.plotly as py
 from plotly.graph_objs import *
-import re
-
 import time
+
+if (len(sys.argv) < 3):
+	print ("Error: Not enough arguments.\n")
+	print ("Usage:   python read_tab.py [tab_file.txt] [graph_name]")
+	print ("Example: python read_tab.py lz_01.txt Get_the_led_out\n")
+	sys.exit()
+
 start_time = time.time()
 
-filename = "lz_01.txt"
 regex = "[0-9]+"
 infret = 0
 
@@ -20,7 +28,7 @@ counts = numpy.zeros(shape = (6,25))
 
 # first, get a list of each line
 i = 5
-with open(filename, "r") as f:
+with open(sys.argv[1], "r") as f:
 	for l in f:
 		# trim whitespace from the line
 		line = l.strip()
@@ -76,7 +84,7 @@ data = Data([
 
 print("--- %s seconds ---" % (time.time() - start_time))
 
-py.plot(data, filename="Led_Zeppelin_Heartbreaker")
+py.plot(data, filename=sys.argv[2])
 
 						
 					
