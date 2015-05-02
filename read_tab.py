@@ -7,6 +7,9 @@ import plotly.plotly as py
 from plotly.graph_objs import *
 import re
 
+import time
+start_time = time.time()
+
 filename = "lz_01.txt"
 regex = "[0-9]+"
 infret = 0
@@ -70,6 +73,9 @@ data = Data([
 		y=['E','A','D','G','B','e']
 		)
 	])
+
+print("--- %s seconds ---" % (time.time() - start_time))
+
 py.plot(data, filename="Led_Zeppelin_Heartbreaker")
 
 						
